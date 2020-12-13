@@ -42,7 +42,7 @@ public class HttpServer implements Runnable{
     static final String METHOD_NOT_SUPPORTED = "not_supported.html";
     static final String FILE_MOVED = "301.html";
     // port to listen connection
-    static final int PORT = 8080;
+    static final int PORT = 3000;
 
     // verbose mode
     static final boolean verbose = true;
