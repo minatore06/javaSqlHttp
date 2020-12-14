@@ -37,7 +37,7 @@ import java.util.logging.Logger;
 // Each Client Connection will be managed in a dedicated Thread
 public class HttpServer implements Runnable{ 
 	
-    static final File WEB_ROOT = new File("C:\\Users\\stei2\\Documents\\NetBeansProjects\\JavaApplication5\\files");
+    static final File WEB_ROOT = new File("/home/cabox/workspace/javaSqlHttp/files");
     static final String DEFAULT_FILE = "index.html";
     static final String FILE_NOT_FOUND = "404.html";
     static final String METHOD_NOT_SUPPORTED = "not_supported.html";
