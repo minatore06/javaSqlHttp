@@ -14,6 +14,7 @@ import java.io.PrintWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.PrintWriter;
+import java.net.InetAddress;
 import java.util.Scanner;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -56,7 +57,7 @@ public class HttpServer implements Runnable{
 
     public static void main(String[] args) {
         try {
-            ServerSocket serverConnect = new ServerSocket(PORT);
+            ServerSocket serverConnect = new ServerSocket(PORT, 1, InetAddress.getByName("0.0.0.0"));
             System.out.println("Server started.\nListening for connections on port : " + PORT + " ...\n");
             
             Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
