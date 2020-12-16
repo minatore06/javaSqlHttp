@@ -288,7 +288,7 @@ public class HttpServer implements Runnable{
             fileData = new byte[fileIn.available()];
             fileIn.read(fileData);
         }finally{
-            fileIn.close();
+            if(fileIn!=null)fileIn.close();
         }
         return fileData;
     }
