@@ -169,13 +169,14 @@ public class HttpServer implements Runnable{
                 String content = getContentType(fileRequested);
 
                 if (method.equals("GET")) { // GET method so we return content
-                    int fileLength = 0;
+                    int fileLength;
                     byte[] fileData;
                     if(!database){
                         fileData = readFileData(WEB_ROOT+fileRequested);/*new byte[file.available()];*/
                         //file.read(fileData);
                         //file.close();
                         fileLength = fileData.length;
+                        if(fileLength == 0)throw new FileNotFoundException();
                     }else{
                         fileData = ser.getBytes();
                         fileLength = fileData.length;
