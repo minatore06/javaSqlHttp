@@ -280,9 +280,14 @@ public class HttpServer implements Runnable{
         InputStream fileIn = null;
         byte[] fileData = null;
 
-        fileIn = getClass().getResourceAsStream(filePath);
-        fileData = fileIn.readAllBytes();
-
+        try{
+            fileIn = getClass().getResourceAsStream(filePath);
+            //fileData = fileIn.readAllBytes();
+            fileData = new byte[fileIn.available()];
+            fileIn.read(fileData);
+        }finally{
+            fileIn.close();
+        }
         return fileData;
     }
 
