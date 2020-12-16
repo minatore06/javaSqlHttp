@@ -284,7 +284,7 @@ public class HttpServer implements Runnable{
         try{
             fileIn = getClass().getResourceAsStream(filePath);
             //fileData = fileIn.readAllBytes();
-            if(fileIn == null)return null;
+            if(fileIn == null||!filePath.contains("."))return null;
             fileData = new byte[fileIn.available()];
             fileIn.read(fileData);
         }finally{
