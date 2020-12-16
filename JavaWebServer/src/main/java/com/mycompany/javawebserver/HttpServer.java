@@ -173,10 +173,10 @@ public class HttpServer implements Runnable{
                     byte[] fileData;
                     if(!database){
                         fileData = readFileData(WEB_ROOT+fileRequested);/*new byte[file.available()];*/
+                        if(fileData == null)throw new FileNotFoundException();
                         //file.read(fileData);
                         //file.close();
                         fileLength = fileData.length;
-                        if(fileLength == 0)throw new FileNotFoundException();
                     }else{
                         fileData = ser.getBytes();
                         fileLength = fileData.length;
@@ -284,6 +284,7 @@ public class HttpServer implements Runnable{
         try{
             fileIn = getClass().getResourceAsStream(filePath);
             //fileData = fileIn.readAllBytes();
+            if(fileIn == null)return null;
             fileData = new byte[fileIn.available()];
             fileIn.read(fileData);
         }finally{
