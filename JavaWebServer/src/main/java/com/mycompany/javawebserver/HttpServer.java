@@ -2,6 +2,7 @@ package com.mycompany.javawebserver;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.File;
@@ -13,7 +14,9 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.InputStream;
 import java.io.PrintWriter;
+import org.apache.commons.io.FileUtils;
 import java.net.InetAddress;
 import java.util.Scanner;
 import java.net.ServerSocket;
@@ -37,11 +40,13 @@ import java.util.logging.Logger;
 // Each Client Connection will be managed in a dedicated Thread
 public class HttpServer implements Runnable{ 
 	
-    final File WEB_ROOT = new File(this.getClass().getClassLoader().getResource("files/").getPath());//new File("/home/cabox/workspace/javaSqlHttp/files");
+    //static final File WEB_ROOT = new File("/home/cabox/workspace/javaSqlHttp/files");
+    static final String WEB_ROOT = "/files";
     static final String DEFAULT_FILE = "index.html";
     static final String FILE_NOT_FOUND = "404.html";
     static final String METHOD_NOT_SUPPORTED = "not_supported.html";
     static final String FILE_MOVED = "301.html";
+    //final BufferedReader DEFAULT_FILE = new BufferedReader(new InputStreamReader(getClass().getResourceAsStream("files/index.html")));
     // port to listen connection
     static final int PORT = 3000;
 
@@ -50,6 +55,9 @@ public class HttpServer implements Runnable{
 
     // Client Connection via Socket Class
     private Socket connect;
+    
+    private boolean database = false;
+    private String ser = "";
 
     public HttpServer(Socket c) {
             connect = c;
@@ -84,9 +92,20 @@ public class HttpServer implements Runnable{
     @Override
     public void run() {
         // we manage our particular client connection
-        BufferedReader in = null; PrintWriter out = null; BufferedOutputStream dataOut = null;
+        BufferedReader in = null; 
+        PrintWriter out = null; 
+        BufferedOutputStream dataOut = null;
         String fileRequested = null;
-
+/*
+        try {
+            FileUtils.copyInputStreamToFile(getClass().getResourceAsStream("/files/"+DEFAULT_FILE), new File(WEB_ROOT+DEFAULT_FILE));
+            FileUtils.copyInputStreamToFile(getClass().getResourceAsStream("/files/"+METHOD_NOT_SUPPORTED), new File(WEB_ROOT+METHOD_NOT_SUPPORTED));
+            FileUtils.copyInputStreamToFile(getClass().getResourceAsStream("/files/"+FILE_NOT_FOUND), new File(WEB_ROOT+FILE_NOT_FOUND));
+            FileUtils.copyInputStreamToFile(getClass().getResourceAsStream("/files/"+FILE_MOVED), new File(WEB_ROOT+FILE_MOVED));
+        } catch (IOException ex) {
+            Logger.getLogger(HttpServer.class.getName()).log(Level.SEVERE, null, ex);
+        }*/
+        
         try {
             // we read characters from the client via input stream on the socket
             in = new BufferedReader(new InputStreamReader(connect.getInputStream()));
@@ -110,11 +129,12 @@ public class HttpServer implements Runnable{
                 }
 
                 // we return the not supported file to the client
-                File file = new File(WEB_ROOT, METHOD_NOT_SUPPORTED);
-                int fileLength = (int) file.length();
+                //File file = new File(WEB_ROOT, METHOD_NOT_SUPPORTED);
+                //InputStream file = /*new BufferedInputStream(new FileInputStream(*/getClass().getResourceAsStream(WEB_ROOT+"/"+METHOD_NOT_SUPPORTED);
                 String contentMimeType = "text/html";
                 //read content to return to client
-                byte[] fileData = readFileData(file, fileLength);
+                byte[] fileData = readFileData(WEB_ROOT+"/"+METHOD_NOT_SUPPORTED);
+                int fileLength = fileData.length;//(int) file.length();
 
                 // we send HTTP Headers with data to client
                 out.println("HTTP/1.1 501 Not Implemented");
@@ -134,28 +154,41 @@ public class HttpServer implements Runnable{
                     fileRequested += DEFAULT_FILE;
                 }else if(fileRequested.equals("/puntivendita.xml")){
                     ObjectMapper objMap = new ObjectMapper();
-                    PuntiVendita pv = objMap.readValue(new File(WEB_ROOT+"/puntiVendita.json"), PuntiVendita.class);
+                    PuntiVendita pv = objMap.readValue(getClass().getResourceAsStream(WEB_ROOT+"/puntiVendita.json"), PuntiVendita.class);
                     XmlMapper xmlMapper = new XmlMapper();
+                    ser = xmlMapper.writeValueAsString(pv);
+                    database = true;
+                    /*
                     xmlMapper.writeValue(new File(WEB_ROOT+"/puntiVendita.xml"),pv);
-                    File file = new File(WEB_ROOT+"/puntiVendita.xml");
+                    File file = new File(WEB_ROOT+"/puntiVendita.xml");*/
                 }else if(fileRequested.contains("/db")){
                     if(fileRequested.endsWith("/xml")){
-                        dbToXml();
+                        ser = dbToXml();
                         fileRequested = "/persone.xml";
                     }
                     else if(fileRequested.endsWith("/json")){
-                        dbToJson();
+                        ser = dbToJson();
                         fileRequested = "/persone.json";
                     }
+                    database = true;
                 }
 
-                File file = new File(WEB_ROOT, fileRequested);
-                int fileLength = (int) file.length();
+                //File file = new File(WEB_ROOT, fileRequested);
                 String content = getContentType(fileRequested);
 
                 if (method.equals("GET")) { // GET method so we return content
-                    byte[] fileData = readFileData(file, fileLength);
-
+                    int fileLength = 0;
+                    byte[] fileData;
+                    if(!database){
+                        fileData = readFileData(WEB_ROOT+fileRequested);/*new byte[file.available()];*/
+                        //file.read(fileData);
+                        //file.close();
+                        fileLength = fileData.length;
+                    }else{
+                        fileData = ser.getBytes();
+                        fileLength = fileData.length;
+                        database = false;
+                    }
                     // send HTTP Headers
                     out.println("HTTP/1.1 200 OK");
                     out.println("Server: Java HTTP Server from SSaurel : 1.0");
@@ -241,28 +274,22 @@ public class HttpServer implements Runnable{
         return listPers;
     }
     
-    public void dbToJson() throws IOException{
+    public String dbToJson() throws IOException{
         ObjectMapper objectMapper = new ObjectMapper();
-        objectMapper.writeValue(new File(WEB_ROOT+"\\persone.json"), getDB());
+        return objectMapper.writeValueAsString(getDB());
     }
     
-    public void dbToXml() throws IOException{
+    public String dbToXml() throws IOException{
         XmlMapper xmlMapper = new XmlMapper();
-        xmlMapper.writeValue(new File(WEB_ROOT+"\\persone.xml"), getDB());
-        File file = new File(WEB_ROOT+"persone.xml");
+        return xmlMapper.writeValueAsString(getDB());
     }
 
-    private byte[] readFileData(File file, int fileLength) throws IOException {
-        FileInputStream fileIn = null;
-        byte[] fileData = new byte[fileLength];
+    private byte[] readFileData(String filePath) throws IOException {
+        InputStream fileIn = null;
+        byte[] fileData = null;
 
-        try {
-            fileIn = new FileInputStream(file);
-            fileIn.read(fileData);
-        } finally {
-            if (fileIn != null) 
-                fileIn.close();
-        }
+        fileIn = getClass().getResourceAsStream(filePath);
+        fileData = fileIn.readAllBytes();
 
         return fileData;
     }
@@ -283,16 +310,17 @@ public class HttpServer implements Runnable{
         if (!fileRequested.endsWith("/")&&!fileRequested.endsWith(".html")&&!fileRequested.endsWith(".xml")) {
             //File file = new File(WEB_ROOT, File_Moved);
             //Files.write(Paths.get(WEB_ROOT+FILE_MOVED), ("<br><p><a href='"+fileRequested+"/index.html'>"+fileRequested+"/index.html</a></p>").getBytes(), StandardOpenOption.APPEND);
-            String append301 = "<br><p><a href='"+fileRequested+"/index.html'>"+fileRequested+"/index.html</a></p>";
+            /*String append301 = "<br><p><a href='"+fileRequested+"/index.html'>"+fileRequested+"/index.html</a></p>";
             String input = null;
             
             FileWriter fw = new FileWriter((WEB_ROOT+"\\"+FILE_MOVED), true);
             fw.write(append301);
-            fw.close();
-            File file = new File(WEB_ROOT, FILE_MOVED);
+            fw.close();*/
             
-            int fileLength = (int) file.length();
-            byte[] fileData = readFileData(file, fileLength);
+            //File file = new File(WEB_ROOT, FILE_MOVED);
+            
+            byte[] fileData = readFileData(WEB_ROOT+"/"+FILE_MOVED);
+            int fileLength = fileData.length;
             String content = getContentType(FILE_MOVED);
 
             // send HTTP Headers
@@ -307,20 +335,20 @@ public class HttpServer implements Runnable{
 
             dataOut.write(fileData, 0, fileLength);
             dataOut.flush();
-            
+            /*
             Scanner sc = new Scanner(new File(WEB_ROOT, FILE_MOVED));
             StringBuffer sb = new StringBuffer();
             input = sc.nextLine();
             input = input.replaceAll(append301, "");
             PrintWriter writer = new PrintWriter(new File(WEB_ROOT, FILE_MOVED));
             writer.append(input);
-            writer.flush();
+            writer.flush();*/
             
         }else{
-            File file = new File(WEB_ROOT, FILE_NOT_FOUND);
-            int fileLength = (int) file.length();
+            //File file = new File(WEB_ROOT, FILE_NOT_FOUND);
             String content = "text/html";
-            byte[] fileData = readFileData(file, fileLength);
+            byte[] fileData = readFileData(WEB_ROOT+"/"+FILE_NOT_FOUND);
+            int fileLength = fileData.length;
 
             out.println("HTTP/1.1 404 File Not Found");
             out.println("Server: Java HTTP Server from SSaurel : 1.0");
