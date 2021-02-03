@@ -235,7 +235,7 @@ public class HttpServer implements Runnable{
         List<Persona> listPers = new LinkedList();
         
         try {
-            conn = DriverManager.getConnection("jdbc:mysql://localhost/java?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "root");
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/java?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC", "root", "oshino");
 
             stmt = conn.createStatement();
             rs = stmt.executeQuery("SELECT * FROM foobar");
